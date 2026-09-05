@@ -16,6 +16,7 @@ import { CustomizePanel } from "@/components/resume/customize-panel";
 import { PdfDownloadButton } from "@/components/resume/pdf-download-button";
 import type { Resume } from "@/types/resume";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const STEPS = [
   { key: "personal", label: "Informations personnelles" },
@@ -33,12 +34,20 @@ export default function ResumeBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
+  const [userId, setUserId] = useState<string | undefined>();
 
   useEffect(() => {
-    getResume(params.id)
-      .then(setResume)
-      .catch(() => router.push("/dashboard"))
-      .finally(() => setLoading(false));
+    const loadData = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id);
+      
+      getResume(params.id)
+        .then(setResume)
+        .catch(() => router.push("/dashboard"))
+        .finally(() => setLoading(false));
+    };
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
@@ -137,6 +146,7 @@ export default function ResumeBuilderPage() {
               onChange={(personalInfo) => patchData({ personalInfo })}
               summary={resume.data.summary}
               onSummaryChange={(summary) => patchData({ summary })}
+              userId={userId}
             />
           )}
           {step === 1 && (
